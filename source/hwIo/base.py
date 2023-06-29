@@ -27,6 +27,7 @@ import config
 import time
 from .ioThread import IoThread, _apcsWillBeStronglyReferenced
 import NVDAState
+import threading
 
 
 def __getattr__(attrName: str) -> Any:
@@ -130,20 +131,23 @@ class IoBase(object):
 			ctypes.create_string_buffer(data) # this will append a null char, which is intentional
 		)
 
+	writeLock = threading.Lock()
+
 	def write(self, data: bytes):
 		if not isinstance(data, bytes):
 			raise TypeError("Expected argument 'data' to be of type 'bytes'")
 		if _isDebug():
 			log.debug("Write: %r" % data)
 
-		size, data = self._prepareWriteBuffer(data)
-		if not ctypes.windll.kernel32.WriteFile(self._writeFile, data, size, None, byref(self._writeOl)):
-			if ctypes.GetLastError() != ERROR_IO_PENDING:
-				if _isDebug():
-					log.debug("Write failed: %s" % ctypes.WinError())
-				raise ctypes.WinError()
-			byteData = DWORD()
-			ctypes.windll.kernel32.GetOverlappedResult(self._writeFile, byref(self._writeOl), byref(byteData), True)
+		with self.writeLock:
+			size, data = self._prepareWriteBuffer(data)
+			if not ctypes.windll.kernel32.WriteFile(self._writeFile, data, size, None, byref(self._writeOl)):
+				if ctypes.GetLastError() != ERROR_IO_PENDING:
+					if _isDebug():
+						log.debug("Write failed: %s" % ctypes.WinError())
+					raise ctypes.WinError()
+				byteData = DWORD()
+				ctypes.windll.kernel32.GetOverlappedResult(self._writeFile, byref(self._writeOl), byref(byteData), True)
 
 	def close(self):
 		if _isDebug():
