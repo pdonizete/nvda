@@ -657,6 +657,9 @@ class Addon(AddonBase):
 				return docFile
 		return None
 
+	def isPendingInstall(self) -> bool:
+		return super().isPendingInstall and self.pendingInstallPath == self.path
+
 	def __repr__(self):
 		return f"{self.__class__.__name__} ({self.name!r}, running={self.isRunning!r})"
 
