@@ -226,6 +226,12 @@ _addonStoreStateToAddonHandlerState: OrderedDict[
 		AddonStateCategory.OVERRIDE_COMPATIBILITY,
 		AddonStateCategory.PENDING_ENABLE,
 	},
+	# If an add-on is being updated,
+	# it will be in both pending remove and pending install
+	AvailableAddonStatus.INSTALLED: {
+		AddonStateCategory.PENDING_INSTALL,
+		AddonStateCategory.PENDING_REMOVE,
+	},
 	AvailableAddonStatus.PENDING_REMOVE: {AddonStateCategory.PENDING_REMOVE},
 	AvailableAddonStatus.PENDING_ENABLE: {AddonStateCategory.PENDING_ENABLE},
 	AvailableAddonStatus.PENDING_DISABLE: {AddonStateCategory.PENDING_DISABLE},
@@ -309,9 +315,8 @@ class SupportsAddonState(SupportsVersionCheck, Protocol):
 
 	@property
 	def isEnabled(self) -> bool:
-		return not (
-			self.isPendingInstall
-			or self.isDisabled
+		return self.isInstalled and not (
+			self.isDisabled
 			or self.isBlocked
 		)
 

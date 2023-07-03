@@ -434,7 +434,7 @@ class Addon(AddonBase):
 
 	def requestRemove(self):
 		"""Marks this addon for removal on NVDA restart."""
-		if self.isPendingInstall:
+		if self.isPendingInstall and not self.isInstalled:
 			self.completeRemove()
 			state[AddonStateCategory.PENDING_INSTALL].discard(self.name)
 			state[AddonStateCategory.OVERRIDE_COMPATIBILITY].discard(self.name)
@@ -476,8 +476,8 @@ class Addon(AddonBase):
 		state[AddonStateCategory.BLOCKED].discard(self.name)
 		state.save()
 
-		if not self.isPendingInstall:
-			# Don't delete add-on store cache if it's an upgrade,
+		if self.name not in state[AddonStateCategory.PENDING_INSTALL]:
+			# Don't delete add-on store cache if there's an upgrade pending,
 			# the add-on manager has already replaced the cache file.
 			from _addonStore.dataManager import addonDataManager
 			assert addonDataManager
